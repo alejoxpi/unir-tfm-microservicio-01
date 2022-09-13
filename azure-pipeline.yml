@@ -1,0 +1,65 @@
+resources:
+  repositories:
+  - repository: self
+    type: git
+    ref: refs/heads/dev
+jobs:
+- job: Job_1
+  displayName: Agent job 1
+  pool:
+    vmImage: ubuntu-latest
+  steps:
+  - checkout: self
+    clean: true
+    fetchTags: false
+  - task: UseDotNet@2
+    displayName: Use .NET Core sdk 3.1.x
+    inputs:
+      version: 3.1.x
+  - task: DotNetCoreCLI@2
+    displayName: dotnet restore
+    inputs:
+      command: restore
+      projects: '**/*.csproj'
+  - task: DotNetCoreCLI@2
+    displayName: dotnet build
+    inputs:
+      projects: '**/*.csproj'
+      arguments: --output publish_output --configuration Release
+  - task: DotNetCoreCLI@2
+    displayName: dotnet publish
+    inputs:
+      command: publish
+      publishWebProjects: false
+      projects: '**/*.csproj'
+      arguments: --output publish_output --configuration Release
+      zipAfterPublish: false
+      modifyOutputPath: false
+  - task: ArchiveFiles@2
+    displayName: Archive publish_output/
+    inputs:
+      rootFolderOrFile: publish_output/
+      includeRootFolder: false
+  - task: PublishBuildArtifacts@1
+    displayName: 'Publish Artifact: drop'
+  - task: AzureAppServiceManage@0
+    displayName: 'Restart Azure App Service: fapp-microservicio01-unir-tfm-iac-demo-$(identificadorUnico)'
+    inputs:
+      ConnectedServiceName: $(connectedServiceNameId)
+      Action: Restart Azure App Service
+      WebAppName: fapp-microservicio01-unir-tfm-iac-demo-$(identificadorUnico)
+  - task: AzureFunctionApp@1
+    displayName: 'Azure Function App Deploy: fapp-microservicio01-unir-tfm-iac-demo-$(identificadorUnico)'
+    inputs:
+      azureSubscription: $(azureSubscriptionId)
+      appType: functionAppLinux
+      appName: fapp-microservicio01-unir-tfm-iac-demo-$(identificadorUnico)
+      package: $(Build.ArtifactStagingDirectory)/**/*.zip
+      runtimeStack: DOTNET|3.1
+  - task: AzureAppServiceManage@0
+    displayName: 'Restart Azure App Service: fapp-microservicio01-unir-tfm-iac-demo-$(identificadorUnico) final'
+    inputs:
+      ConnectedServiceName: $(connectedServiceNameId)
+      Action: Restart Azure App Service
+      WebAppName: fapp-microservicio01-unir-tfm-iac-demo-$(identificadorUnico)
+...
