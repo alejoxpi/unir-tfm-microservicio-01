@@ -1,0 +1,9 @@
+{
+  "profiles": {
+    "unir_tfm_microservicio_01": {
+      "commandName": "Project",
+      "commandLineArgs": "--port 7243",
+      "launchBrowser": false
+    }
+  }
+}
